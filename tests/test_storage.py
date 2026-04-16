@@ -75,3 +75,19 @@ def test_overwrite_profile():
     save_profile("myapp", "dev", {"KEY": "old"})
     save_profile("myapp", "dev", {"KEY": "new"})
     assert get_profile("myapp", "dev") == {"KEY": "new"}
+
+
+def test_save_profile_empty_vars():
+    """Saving a profile with an empty dict should persist and be retrievable."""
+    save_profile("myapp", "empty", {})
+    assert get_profile("myapp", "empty") == {}
+    assert "empty" in list_profiles("myapp")
+
+
+def test_delete_one_profile_keeps_others():
+    """Deleting one profile should not affect sibling profiles in the same project."""
+    save_profile("myapp", "dev", {"A": "1"})
+    save_profile("myapp", "prod", {"A": "2"})
+    delete_profile("myapp", "dev")
+    assert get_profile("myapp", "prod") == {"A": "2"}
+    assert "myapp" in list_projects()

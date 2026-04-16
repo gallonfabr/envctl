@@ -49,6 +49,22 @@ def read_events(project: Optional[str] = None, limit: int = 50) -> list:
     return events[-limit:]
 
 
+def search_events(action: Optional[str] = None, profile: Optional[str] = None, limit: int = 50) -> list:
+    """Read audit events filtered by action and/or profile name.
+
+    Args:
+        action: If provided, only return events matching this action.
+        profile: If provided, only return events matching this profile.
+        limit: Maximum number of events to return (most recent first).
+    """
+    events = read_events(limit=None)  # type: ignore[arg-type]
+    if action is not None:
+        events = [e for e in events if e.get("action") == action]
+    if profile is not None:
+        events = [e for e in events if e.get("profile") == profile]
+    return events[-limit:]
+
+
 def clear_audit_log() -> None:
     """Clear the audit log."""
     path = get_audit_path()

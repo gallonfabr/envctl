@@ -4,6 +4,7 @@ import re
 from typing import Dict, List, Tuple
 
 VAR_NAME_RE = re.compile(r'^[A-Z_][A-Z0-9_]*$')
+IDENT_RE = re.compile(r'^[\w-]+$')
 
 
 def validate_var_name(name: str) -> bool:
@@ -27,14 +28,19 @@ def validate_vars(vars_dict: Dict[str, str]) -> List[Tuple[str, str]]:
     return errors
 
 
+def _validate_ident(name: str) -> bool:
+    """Return True if name contains only alphanumerics, hyphens, underscores."""
+    return bool(IDENT_RE.match(name))
+
+
 def validate_profile_name(name: str) -> bool:
     """Return True if profile name contains only alphanumerics, hyphens, underscores."""
-    return bool(re.match(r'^[\w-]+$', name))
+    return _validate_ident(name)
 
 
 def validate_project_name(name: str) -> bool:
     """Return True if project name contains only alphanumerics, hyphens, underscores."""
-    return bool(re.match(r'^[\w-]+$', name))
+    return _validate_ident(name)
 
 
 def assert_valid_profile(project: str, profile: str, vars_dict: Dict[str, str]) -> None:

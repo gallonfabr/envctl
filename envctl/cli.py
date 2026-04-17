@@ -1,91 +1,88 @@
+"""Main CLI entry point for envctl."""
 import click
 from envctl.profile import add_profile, get_profile, delete_profile, apply_profile
-from envctl.storage import list_projects, list_profiles
+from envctl.cli_audit import audit_cmd
+from envctl.cli_copy import copy_cmd
+from envctl.cli_tags import tags_cmd
+from envctl.cli_search import search_cmd
+from envctl.cli_compare import compare_cmd
 
 
 @click.group()
 def cli():
-    """envctl — manage and switch between environment variable profiles."""
-    pass
+    """envctl — manage environment variable profiles."""
 
 
 @cli.command("add")
 @click.argument("project")
 @click.argument("profile")
-@click.option("--var", "-v", multiple=True, help="VAR=VALUE pairs")
-@click.option("--encrypt", "-e", is_flag=True, help="Encrypt the profile")
-@click.password_option("--password", "-p", required=False, default=None, help="Encryption password")
-def add_cmd(project, profile, var, encrypt, password):
-    """Add a new profile for a project."""
-    variables = {}
-    for v in var:
+@click.argument("vars", nargs=-1)
+@click.option("--password", default=None, help="Encrypt profile with password.")
+def add_cmd(project, profile, vars, password):
+    """Add a new profile with VAR=VALUE pairs."""
+    parsed = {}
+    for v in vars:
         if "=" not in v:
-            raise click.BadParameter(f"Invalid format '{v}', expected VAR=VALUE")
-        key, value = v.split("=", 1)
-        variables[key] = value
-    if encrypt and not password:
-        password = click.prompt("Password", hide_input=True)
-    add_profile(project, profile, variables, password=password if encrypt else None)
-    click.echo(f"Profile '{profile}' added for project '{project}'.")
+            raise click.BadParameter(f"Invalid format '{v}', expected KEY=VALUE.")
+        k, val = v.split("=", 1)
+        parsed[k] = val
+    add_profile(project, profile, parsed, password=password)
+    click.echo(f"Profile '{profile}' added to project '{project}'.")
 
 
 @cli.command("get")
 @click.argument("project")
 @click.argument("profile")
-@click.option("--password", "-p", default=None, help="Decryption password")
+@click.option("--password", default=None)
 def get_cmd(project, profile, password):
-    """Display variables in a profile."""
-    data = get_profile(project, profile, password=password)
-    if data is None:
-        click.echo("Profile not found.", err=True)
-        return
-    for k, v in data.items():
+    """Get and display a profile's variables."""
+    try:
+        vars = get_profile(project, profile, password=password)
+    except KeyError as e:
+        raise click.ClickException(str(e))
+    for k, v in vars.items():
         click.echo(f"{k}={v}")
 
 
 @cli.command("apply")
 @click.argument("project")
 @click.argument("profile")
-@click.option("--password", "-p", default=None, help="Decryption password")
+@click.option("--password", default=None)
 def apply_cmd(project, profile, password):
-    """Print export statements to apply a profile."""
-    exports = apply_profile(project, profile, password=password)
-    if exports is None:
-        click.echo("Profile not found.", err=True)
-        return
-    for line in exports:
-        click.echo(line)
+    """Apply a profile to the current shell session."""
+    try:
+        script = apply_profile(project, profile, password=password)
+    except KeyError as e:
+        raise click.ClickException(str(e))
+    click.echo(script)
 
 
 @cli.command("delete")
-@click.argument("("profile")
-@click.confirmation_option(prompt="Are you sure you want to delete this profile?")
+@click.argument("project")
+@click.argument("profile")
 def delete_cmd(project, profile):
     """Delete a profile."""
-    deleted = delete_profile(project, profile)
-    if deleted:
-        click.echo(f"Profile '{profile}' deleted from project '{project}'.")
-    else:
-        click.echo("Profile not found.", err=True)
+    try:
+        delete_profile(project, profile)
+    except KeyError as e:
+        raise click.ClickException(str(e))
+    click.echo(f"Profile '{profile}' deleted from project '{project}'.")
 
 
 @cli.command("list")
-@click.argument("project", required=False)
+@click.argument("project")
 def list_cmd(project):
-    """List projects or profiles within a project."""
-    if project:
-        profiles = list_profiles(project)
-        if not profiles:
-            click.echo(f"No profiles found for project '{project}'.")
-        for p in profiles:
-            click.echo(p)
-    else:
-        projects = list_projects()
-        if not projects:
-            click.echo("No projects found.")
-        for proj in projects:
-            click.echo(proj)
+    """List profiles for a project."""
+    from envctl.storage import list_profiles
+    profiles = list_profiles(project)
+    if not profiles:
+        click.echo("No profiles found.")
+    for p in profiles:
+        click.echo(p)
 
 
-if __name__ == "__main__":
-    cli()
+cli.add_command(audit_cmd)
+cli.add_command(copy_cmd)
+cli.add_command(tags_cmd)
+cli.add_command(search_cmd)
+cli.add_command(compare_cmd)

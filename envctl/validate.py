@@ -45,8 +45,12 @@ def validate_project_name(name: str) -> bool:
 
 def assert_valid_profile(project: str, profile: str, vars_dict: Dict[str, str]) -> None:
     """Raise ValueError with a descriptive message if any validation fails."""
+    if not isinstance(project, str) or not project:
+        raise ValueError("Project name must be a non-empty string")
     if not validate_project_name(project):
         raise ValueError(f"Invalid project name: '{project}'")
+    if not isinstance(profile, str) or not profile:
+        raise ValueError("Profile name must be a non-empty string")
     if not validate_profile_name(profile):
         raise ValueError(f"Invalid profile name: '{profile}'")
     errors = validate_vars(vars_dict)

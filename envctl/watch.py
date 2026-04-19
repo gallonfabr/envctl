@@ -36,3 +36,27 @@ def drift_summary(drifts: list[dict]) -> dict:
         status = d["status"]
         summary[status] = summary.get(status, 0) + 1
     return summary
+
+
+def format_drift_report(drifts: list[dict]) -> str:
+    """Format a human-readable drift report from a list of drift entries.
+
+    Returns a multiline string summarising each drifted key.
+    """
+    if not drifts:
+        return "No drift detected."
+
+    lines = []
+    for d in drifts:
+        key = d["key"]
+        status = d["status"]
+        if status == "missing":
+            lines.append(f"  MISSING  {key} (expected: {d['expected']!r})")
+        elif status == "changed":
+            lines.append(f"  CHANGED  {key}: {d['expected']!r} -> {d['actual']!r}")
+        else:
+            lines.append(f"  {status.upper():<8} {key}")
+
+    summary = drift_summary(drifts)
+    header = f"Drift report: {sum(summary.values())} issue(s) found"
+    return "\n".join([header] + lines)

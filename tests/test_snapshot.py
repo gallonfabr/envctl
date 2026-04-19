@@ -55,6 +55,20 @@ def test_list_snapshots_filter_by_project():
     assert len(snaps) == 1
 
 
+def test_list_snapshots_empty():
+    """list_snapshots returns an empty list when no snapshots exist."""
+    snaps = list_snapshots()
+    assert snaps == []
+
+
+def test_list_snapshots_filter_no_match():
+    """list_snapshots returns empty list when project filter matches nothing."""
+    _seed("myapp", "dev", {"FOO": "bar"})
+    create_snapshot("myapp", "dev")
+    snaps = list_snapshots(project="nonexistent")
+    assert snaps == []
+
+
 def test_restore_snapshot():
     _seed("myapp", "dev", {"FOO": "original"})
     key = create_snapshot("myapp", "dev")

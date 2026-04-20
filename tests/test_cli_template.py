@@ -38,6 +38,17 @@ def test_render_unknown_error(runner):
     assert "Error" in result.output
 
 
+def test_render_missing_var_includes_var_name(runner):
+    """Ensure the error message includes the name of the missing variable."""
+    with patch(
+        "envctl.cli_template.render_profile_template",
+        side_effect=KeyError("DATABASE_URL"),
+    ):
+        result = runner.invoke(template_cmd, ["render", "proj", "dev", "{{DATABASE_URL}}"])
+    assert result.exit_code == 1
+    assert "DATABASE_URL" in result.output
+
+
 def test_vars_command(runner):
     result = runner.invoke(template_cmd, ["vars", "{{A}} and {{B}} and {{A}}"])
     assert result.exit_code == 0

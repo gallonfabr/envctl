@@ -52,6 +52,20 @@ def test_pin_missing_profile(mock_load, mock_save, mock_log):
 @patch("envctl.pin.log_event")
 @patch("envctl.pin.save_profiles")
 @patch("envctl.pin.load_profiles")
+def test_pin_overwrites_existing_pin(mock_load, mock_save, mock_log):
+    """Pinning a new profile when one is already pinned should update the pin."""
+    store = _store_copy()
+    store["myproject"]["__pinned__"] = "dev"
+    mock_load.return_value = store
+    pin_profile("myproject", "prod")
+    assert store["myproject"]["__pinned__"] == "prod"
+    mock_save.assert_called_once_with(store)
+    mock_log.assert_called_once_with("myproject", "prod", "pin")
+
+
+@patch("envctl.pin.log_event")
+@patch("envctl.pin.save_profiles")
+@patch("envctl.pin.load_profiles")
 def test_unpin_profile(mock_load, mock_save, mock_log):
     store = _store_copy()
     store["myproject"]["__pinned__"] = "dev"

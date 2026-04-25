@@ -7,6 +7,9 @@ from typing import Optional
 
 SCHEDULE_FILE = "schedules.json"
 
+VALID_DAYS = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
+DAY_MAP = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
 
 class ScheduleError(Exception):
     pass
@@ -36,8 +39,7 @@ def set_schedule(project: str, profile: str, start: str, end: str, days: list[st
     except ValueError as e:
         raise ScheduleError(f"Invalid time format: {e}")
 
-    valid_days = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
-    bad = set(d.lower() for d in days) - valid_days
+    bad = set(d.lower() for d in days) - VALID_DAYS
     if bad:
         raise ScheduleError(f"Invalid days: {bad}")
 
@@ -76,10 +78,18 @@ def active_now(project: str, profile: str, at: Optional[datetime] = None) -> boo
     if not entry:
         return False
     now = at or datetime.now()
-    day_map = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-    if day_map[now.weekday()] not in entry["days"]:
+    if DAY_MAP[now.weekday()] not in entry["days"]:
         return False
     start = time.fromisoformat(entry["start"])
     end = time.fromisoformat(entry["end"])
     current = now.time().replace(second=0, microsecond=0)
     return start <= current <= end
+
+
+def active_schedules(project: Optional[str] = None, at: Optional[datetime] = None) -> list[dict]:
+    """Return all schedules that are currently active, optionally filtered by project."""
+    now = at or datetime.now()
+    return [
+        entry for entry in list_schedules(project)
+        if active_now(entry["project"], entry["profile"], at=now)
+    ]

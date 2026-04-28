@@ -24,6 +24,10 @@ def quota_ceiling_cmd() -> None:
 )
 def check_vars_cmd(project: str, profile: str, incoming: int) -> None:
     """Check whether adding INCOMING vars to PROFILE is within ceiling."""
+    if incoming < 1:
+        click.echo("error: --incoming must be a positive integer", err=True)
+        raise SystemExit(1)
+
     try:
         result = check_var_ceiling(project, profile, incoming)
     except QuotaCeilingError as exc:
@@ -41,7 +45,12 @@ def check_vars_cmd(project: str, profile: str, incoming: int) -> None:
 @click.argument("project")
 def check_quota_cmd(project: str) -> None:
     """Check whether adding a new profile to PROJECT is within quota."""
-    result = check_project_quota(project)
+    try:
+        result = check_project_quota(project)
+    except QuotaCeilingError as exc:
+        click.echo(f"error: {exc}", err=True)
+        raise SystemExit(1)
+
     if result.allowed:
         click.echo(f"ok: project '{project}' is within quota")
     else:
